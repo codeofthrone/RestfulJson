@@ -21,6 +21,8 @@ func checkerr(str string, err error) {
 
 func main() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+	http.Handle("/dashboard/", http.StripPrefix("/dashboard/", http.FileServer(http.Dir("./dashboard/"))))
+	http.ListenAndServe(":80", nil)
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(

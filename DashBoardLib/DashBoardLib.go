@@ -1,8 +1,8 @@
 package dashboardlib
 
 import (
-	_ "../../github.com/GO-SQL-Driver/MySQL"
-	"../../github.com/pmylund/sortutil"
+	_ "github.com/GO-SQL-Driver/MySQL"
+	"github.com/pmylund/sortutil"
 	"database/sql"
 	// "html/template"
 	"log"
