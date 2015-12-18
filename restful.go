@@ -21,8 +21,7 @@ func checkerr(str string, err error) {
 
 func main() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
-	http.Handle("/dashboard/", http.StripPrefix("/dashboard/", http.FileServer(http.Dir("./dashboard/"))))
-	http.ListenAndServe(":80", nil)
+
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(
@@ -75,6 +74,11 @@ func main() {
 			case TypeName == "Status":
 				ReturnResult := dashboardlib.PieChart(ProjectName, TypeName)
 				w.WriteJson(&ReturnResult)
+
+			case TypeName == "LastUpdate":
+				ReturnResult := dashboardlib.LastUpdateWeek()
+				w.WriteJson(&ReturnResult)
+
 			}
 
 		}),
@@ -83,5 +87,5 @@ func main() {
 		log.Fatal(err)
 	}
 	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(":8080", api.MakeHandler()))
+	log.Fatal(http.ListenAndServe(":7108", api.MakeHandler()))
 }

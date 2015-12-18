@@ -1,9 +1,9 @@
 package dashboardlib
 
 import (
+	"database/sql"
 	_ "github.com/GO-SQL-Driver/MySQL"
 	"github.com/pmylund/sortutil"
-	"database/sql"
 	// "html/template"
 	"log"
 	"strconv"
@@ -50,6 +50,12 @@ type JsonResultStr struct {
 	RemainCounter []string `json:"RemainCounter"`
 }
 
+type JsonResultTime struct {
+	Week       string `json:"Week"`
+	LastUpdate string `json:"LastUpdate"`
+	Current    string `json:"Current"`
+}
+
 type JsonResultPie struct {
 	Name          []string  `json:"Name"`
 	RemainCounter []float64 `json:"RemainCounter"`
@@ -58,6 +64,7 @@ type JsonResultPie struct {
 type JsonResultTable struct {
 	Name     string `json:"Key"`
 	Summary  string `json:"Summary"`
+	Priority string `json:"Priority"`
 	DiffDate int    `json:"date"`
 }
 
@@ -617,7 +624,7 @@ func PieChart(ProjectName string, TYPE string) JsonResultPie {
 
 func IssueTimespent(ProjectName string) []JsonResultTable {
 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
-	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.DiffDate from (SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate " +
+	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.`Priority`, a.DiffDate from (SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate " +
 		"FROM `Issues` WHERE `Key` LIKE '" + ProjectName + "-%' AND Status!='Closed' AND Resolution not like  '% Fix' ORDER BY UpdatedTime AND Status='Closed' )as a " +
 		"ORDER by a.DiffDate"
 	RemainIssues, err := db.Query(RemainIssueSQL)
@@ -625,7 +632,7 @@ func IssueTimespent(ProjectName string) []JsonResultTable {
 	var RemainIssueResult []JsonResultTable
 	for RemainIssues.Next() {
 		var tmpRemainIssue JsonResultTable
-		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.DiffDate)
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate)
 		log.Println(tmpRemainIssue)
 		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
 
@@ -635,178 +642,18 @@ func IssueTimespent(ProjectName string) []JsonResultTable {
 	return RemainIssueResult
 }
 
-// func TYGHDiffVersion(ProjectName string) (JsonResult, JsonResult) {
-// 	var ReturnJsonAPP JsonResult
-// 	var ReturnJsonWEB JsonResult
-// 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
-// 	// ProjectName := "BABY"
-// 	versSQL := "SELECT Id,Name from ( " +
-// 		"SELECT f.Id,f.Name,f.Project FROM Fixversions as f LEFT join Versions as v on f.Id = v.Id UNION DISTINCT " +
-// 		"SELECT v.Id,v.Name,v.Project FROM Fixversions as f RIGHT join Versions as v on f.Id = v.Id) as a where  Project='" + ProjectName + "'  group by a.Id " +
-// 		"ORDER BY `a`.`Id` ASC"
-// 	Vers, err := db.Query(versSQL)
-// 	checkerr(versSQL, err)
-// 	var DiffVersionResult []JiraIssuesStatusDiffVersion
-// 	for Vers.Next() {
-// 		var (
-// 			IssueVersions JiraIssuesStatusDiffVersion
-// 			tmpVerId      string
-// 			tmpVerName    string
-// 		)
-// 		Vers.Scan(&tmpVerId, &tmpVerName)
-// 		IssueVersions.Name = tmpVerName
-// 		DiffVersionResult = append(DiffVersionResult, IssueVersions)
-// 	}
-// 	Vers.Close()
-
-// 	sortutil.AscByField(DiffVersionResult, "Name")
-// 	APPRemain := 0
-// 	WEBRemain := 0
-
-// 	for key, Value := range DiffVersionResult {
-
-// 		VerSNSQL := " SELECT Sn FROM `Versions` WHERE `Project` = '" + ProjectName + "' AND Name ='" + Value.Name + "' "
-// 		VerSN := QuerySingle(VerSNSQL)
-// 		VerDataSQL := "SELECT Count(*) from Issues as i ,Versions as vs ,Version as v  where `Key` like '" + ProjectName + "-%' AND v.Data=vs.Sn AND vs.`Sn`='" + VerSN + "'  AND v.Id = i.Id AND v.`Enable`='1' AND i.Resolution not like '% Fix'"
-// 		// log.Println(VerDataSQL)
-// 		tmpCreateCounter := QuerySingle(VerDataSQL)
-// 		Value.CreateCounter, _ = strconv.Atoi(tmpCreateCounter)
-
-// 		FixVerSNSQL := " SELECT Sn FROM `Fixversions` WHERE `Project` = '" + ProjectName + "' AND Name ='" + Value.Name + "' "
-// 		FixVerSN := QuerySingle(FixVerSNSQL)
-// 		FixVerDataSQL := "SELECT count(*) from `Issues` as i inner join `Fixversions` as fs  inner join `Fixversion` as f where `Key` like '" + ProjectName + "-%' AND f.`Data`=fs.`Sn` AND fs.`Sn`='" + FixVerSN + "' AND i.`Status`='Closed' AND f.Id = i.Id AND f.`Enable`='1'  AND i.Resolution not like '% Fix'"
-// 		// log.Println(FixVerDataSQL)
-// 		tmpCloseCounter := QuerySingle(FixVerDataSQL)
-// 		Value.CloseCounter, _ = strconv.Atoi(tmpCloseCounter)
-// 		if strings.Contains(Value.Name, "WEB") {
-// 			WEBRemain = (WEBRemain + Value.CreateCounter) - Value.CloseCounter
-// 			Value.RemainCounter = WEBRemain
-// 		} else if strings.Contains(Value.Name, "APP") {
-// 			APPRemain = (APPRemain + Value.CreateCounter) - Value.CloseCounter
-// 			Value.RemainCounter = APPRemain
-// 		}
-// 		log.Println(key, Value)
-// 		if strings.Contains(Value.Name, "APP") {
-// 			ReturnJsonAPP.Name = append(ReturnJsonAPP.Name, Value.Name)
-// 			ReturnJsonAPP.CreateCounter = append(ReturnJsonAPP.CreateCounter, Value.CreateCounter)
-// 			ReturnJsonAPP.CloseCounter = append(ReturnJsonAPP.CloseCounter, Value.CloseCounter)
-// 			ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, Value.RemainCounter)
-// 		} else {
-// 			ReturnJsonWEB.Name = append(ReturnJsonWEB.Name, Value.Name)
-// 			ReturnJsonWEB.CreateCounter = append(ReturnJsonWEB.CreateCounter, Value.CreateCounter)
-// 			ReturnJsonWEB.CloseCounter = append(ReturnJsonWEB.CloseCounter, Value.CloseCounter)
-// 			ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, Value.RemainCounter)
-// 		}
-// 	}
-
-// 	db.Close()
-
-// 	return ReturnJsonAPP, ReturnJsonWEB
-
-// }
-
-// func DiffVersion(ProjectName string) JsonResult {
-// 	var ReturnJson JsonResult
-// 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
-// 	// ProjectName := "BABY"
-// 	versSQL := "SELECT Id,Name from ( " +
-// 		"SELECT f.Id,f.Name,f.Project FROM Fixversions as f LEFT join Versions as v on f.Id = v.Id UNION DISTINCT " +
-// 		"SELECT v.Id,v.Name,v.Project FROM Fixversions as f RIGHT join Versions as v on f.Id = v.Id) as a where  Project='" + ProjectName + "'  group by a.Id " +
-// 		"ORDER BY `a`.`Id` ASC"
-// 	Vers, err := db.Query(versSQL)
-// 	checkerr(versSQL, err)
-// 	var DiffVersionResult []JiraIssuesStatusDiffVersion
-// 	for Vers.Next() {
-// 		var (
-// 			IssueVersions JiraIssuesStatusDiffVersion
-// 			tmpVerId      string
-// 			tmpVerName    string
-// 		)
-// 		Vers.Scan(&tmpVerId, &tmpVerName)
-// 		IssueVersions.Name = tmpVerName
-// 		DiffVersionResult = append(DiffVersionResult, IssueVersions)
-// 	}
-// 	Vers.Close()
-
-// 	sortutil.AscByField(DiffVersionResult, "Name")
-// 	APPRemain := 0
-// 	WEBRemain := 0
-// 	ELSERemain := 0
-// 	for key, Value := range DiffVersionResult {
-// 		VerSNSQL := " SELECT Sn FROM `Versions` WHERE `Project` = '" + ProjectName + "' AND Name ='" + Value.Name + "' "
-// 		VerSN := QuerySingle(VerSNSQL)
-// 		VerDataSQL := "SELECT Count(*) from Issues as i ,Versions as vs ,Version as v  where `Key` like '" + ProjectName + "-%' AND v.Data=vs.Sn AND vs.`Sn`='" + VerSN + "'  AND v.Id = i.Id AND v.`Enable`='1' AND i.Resolution not like '% Fix'"
-// 		// log.Println(VerDataSQL)
-// 		tmpCreateCounter := QuerySingle(VerDataSQL)
-// 		Value.CreateCounter, _ = strconv.Atoi(tmpCreateCounter)
-
-// 		FixVerSNSQL := " SELECT Sn FROM `Fixversions` WHERE `Project` = '" + ProjectName + "' AND Name ='" + Value.Name + "' "
-// 		FixVerSN := QuerySingle(FixVerSNSQL)
-// 		FixVerDataSQL := "SELECT count(*) from `Issues` as i inner join `Fixversions` as fs  inner join `Fixversion` as f where `Key` like '" + ProjectName + "-%' AND f.`Data`=fs.`Sn` AND fs.`Sn`='" + FixVerSN + "' AND i.`Status`='Closed' AND f.Id = i.Id AND f.`Enable`='1'  AND i.Resolution not like '% Fix'"
-// 		// log.Println(FixVerDataSQL)
-// 		tmpCloseCounter := QuerySingle(FixVerDataSQL)
-// 		Value.CloseCounter, _ = strconv.Atoi(tmpCloseCounter)
-// 		if strings.Contains(Value.Name, "WEB") {
-// 			WEBRemain = (WEBRemain + Value.CreateCounter) - Value.CloseCounter
-// 			Value.RemainCounter = WEBRemain
-// 		} else if strings.Contains(Value.Name, "APP") {
-// 			APPRemain = (APPRemain + Value.CreateCounter) - Value.CloseCounter
-// 			Value.RemainCounter = APPRemain
-// 		} else {
-// 			ELSERemain = (ELSERemain + Value.CreateCounter) - Value.CloseCounter
-// 			Value.RemainCounter = ELSERemain
-// 		}
-// 		log.Println(key, Value)
-// 		ReturnJson.Name = append(ReturnJson.Name, Value.Name)
-
-// 		ReturnJson.CreateCounter = append(ReturnJson.CreateCounter, Value.CreateCounter)
-// 		ReturnJson.CloseCounter = append(ReturnJson.CloseCounter, Value.CloseCounter)
-// 		ReturnJson.RemainCounter = append(ReturnJson.RemainCounter, Value.RemainCounter)
-// 	}
-
-// 	db.Close()
-
-// 	return ReturnJson
-
-// }
-// func WeekRemain(ProjectName string) JsonResult {
-//Week remain
-// var ReturnJson JsonResult
-// db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
-// WeekRemainSQL := "SELECT a.week,a.createcounter ,b.closecounter from (" +
-// 	"SELECT week , count(*) as createcounter FROM ( SELECT Sn,`Key`,CreatedTime , WEEK(CreatedTime)+1 as week FROM Issues " +
-// 	" WHERE `Key` LIKE '" + ProjectName + "-%'  ORDER by CreatedTime ) as a  GROUP BY week ) as a  " +
-// 	" INNER join (SELECT week,count(*) as closecounter  FROM ( SELECT Sn,`Key`,CreatedTime , WEEK(UpdatedTime)+1 as week FROM Issues " +
-// 	" WHERE `Key` LIKE '" + ProjectName + "-%' AND Status='Closed'  ORDER by UpdatedTime ) as a  GROUP BY week  ) as b on a.week = b.week GROUP BY a.week "
-// WeekRemains, err := db.Query(WeekRemainSQL)
-// log.Println(WeekRemainSQL)
-// checkerr(WeekRemainSQL, err)
-// var WeekReaminResult []JiraIssuesDateRemain
-// WeekRemainCounter := 0
-// for WeekRemains.Next() {
-// 	var (
-// 		WeekRemain       JiraIssuesDateRemain
-// 		tmpCreateCounter int
-// 		tmpCloseCounter  int
-// 		tmpName          string
-// 	)
-// 	WeekRemains.Scan(&tmpName, &tmpCreateCounter, &tmpCloseCounter)
-// 	WeekRemain.Name = tmpName
-// 	WeekRemain.CreateCounter = tmpCreateCounter
-// 	WeekRemain.CloseCounter = tmpCloseCounter
-// 	WeekRemainCounter = WeekRemainCounter + tmpCreateCounter - tmpCloseCounter
-// 	WeekRemain.RemainCounter = WeekRemainCounter
-// 	WeekReaminResult = append(WeekReaminResult, WeekRemain)
-// }
-// WeekRemains.Close()
-// sortutil.AscByField(WeekReaminResult, "Name")
-// for key, value := range WeekReaminResult {
-// 	log.Println(key, value)
-// 	ReturnJson.Name = append(ReturnJson.Name, value.Name)
-// 	ReturnJson.CreateCounter = append(ReturnJson.CreateCounter, value.CreateCounter)
-// 	ReturnJson.CloseCounter = append(ReturnJson.CloseCounter, value.CloseCounter)
-// 	ReturnJson.RemainCounter = append(ReturnJson.RemainCounter, value.RemainCounter)
-// }
-// db.Close()
-// return ReturnJson
-// }
+func LastUpdateWeek() JsonResultTime {
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	RemainIssueSQL := "SELECT week(FROM_UNIXTIME(UNIX_TIMESTAMP(MAX(UPDATE_TIME))))+1 as week , FROM_UNIXTIME(UNIX_TIMESTAMP(MAX(UPDATE_TIME))) as last_update , NOW() as now " +
+		"FROM information_schema.tables  WHERE TABLE_SCHEMA='Jira_Data' GROUP BY TABLE_SCHEMA"
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	var returnJson JsonResultTime
+	for RemainIssues.Next() {
+		RemainIssues.Scan(&returnJson.Week, &returnJson.LastUpdate, &returnJson.Current)
+	}
+	RemainIssues.Close()
+	db.Close()
+	// log.Println(returnJson)
+	return returnJson
+}

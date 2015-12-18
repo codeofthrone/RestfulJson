@@ -28,68 +28,116 @@ StandaloneDashboard(function(db){
 
 
 function projectModel(Component,ProjectNmae) {
+
+    var kpi = new KPIComponent ();
+    Component.addComponent(kpi);
+    kpichart(kpi,"http://10.116.136.13:7108/"+ProjectNmae+"/LastUpdate");
+
+
 	/** Show Pie chart  **/
 	var priority = new ChartComponent();
 	Component.addComponent (priority);
-	pieChar(priority,"Priority","http://10.116.136.13:8080/"+ProjectNmae+"/Priority"); //(Component,CaptionNmae,Link)
+	pieChar(priority,"Priority","http://10.116.136.13:7108/"+ProjectNmae+"/Priority"); //(Component,CaptionNmae,Link)
 	/** Show Pie chart  **/
 	var status = new ChartComponent();
 	Component.addComponent (status);
-	pieChar(status,"Status","http://10.116.136.13:8080/"+ProjectNmae+"/Resolution"); //(Component,CaptionNmae,Link)
+	pieChar(status,"Status","http://10.116.136.13:7108/"+ProjectNmae+"/Resolution"); //(Component,CaptionNmae,Link)
 	/** Show Pie chart  **/
 	var resolution = new ChartComponent();
 	Component.addComponent (resolution);
-	pieChar(resolution,"Resolution","http://10.116.136.13:8080/"+ProjectNmae+"/Status"); //(Component,CaptionNmae,Link)
+	pieChar(resolution,"Resolution","http://10.116.136.13:7108/"+ProjectNmae+"/Status"); //(Component,CaptionNmae,Link)
 
 	/** Show Stacked Column chart  **/
 	if(ProjectNmae == "TYGH"){
   //   	var issue_status_APP = new ChartComponent();
 		// Component.addComponent (issue_status_APP);
 		// issue_status_APP.setDimensions (6, 4);
-		// stackedColumnChar(issue_status_APP,"Issue_status_APP","http://10.116.136.13:8080/"+ProjectNmae+"/DiffVersionAPP");
+		// stackedColumnChar(issue_status_APP,"Issue_status_APP","http://10.116.136.13:7108/"+ProjectNmae+"/DiffVersionAPP");
 
 		// var issue_status_WEB = new ChartComponent();
 		// Component.addComponent (issue_status_WEB);
 		// issue_status_WEB.setDimensions (6, 4);
-		// stackedColumnChar(issue_status_WEB,"Issue_status_WEB","http://10.116.136.13:8080/"+ProjectNmae+"/DiffVersionWEB");
+		// stackedColumnChar(issue_status_WEB,"Issue_status_WEB","http://10.116.136.13:7108/"+ProjectNmae+"/DiffVersionWEB");
    
    		var so_far_status_APP = new ChartComponent();
     	so_far_status_APP.setDimensions (12, 4);
 		Component.addComponent (so_far_status_APP);
-		stackedColumnChar(so_far_status_APP,"JIRA issue status in diff. versions_APP","http://10.116.136.13:8080/"+ProjectNmae+"/DiffVersionSoFarAPP");
+		stackedColumnChar(so_far_status_APP,"JIRA issue status in diff. versions_APP","http://10.116.136.13:7108/"+ProjectNmae+"/DiffVersionSoFarAPP");
 
 		var so_far_status_WEB = new ChartComponent();
     	so_far_status_WEB.setDimensions (12, 4);
 		Component.addComponent (so_far_status_WEB);
-		stackedColumnChar(so_far_status_WEB,"JIRA issue status in diff. versions_WEB","http://10.116.136.13:8080/"+ProjectNmae+"/DiffVersionSoFarWEB");
+		stackedColumnChar(so_far_status_WEB,"JIRA issue status in diff. versions_WEB","http://10.116.136.13:7108/"+ProjectNmae+"/DiffVersionSoFarWEB");
 
 		/** Show Line chart  **/
 	    var daily_status = new ChartComponent();
 		Component.addComponent (daily_status);
-		LineChar("TYGH",daily_status,"JIRA issue remain by time(Daily)","http://10.116.136.13:8080/"+ProjectNmae+"/TYGHDiffDate");
+		LineChar("TYGH",daily_status,"JIRA issue remain by time(Daily)","http://10.116.136.13:7108/"+ProjectNmae+"/TYGHDiffDate");
     }else if(ProjectNmae == "BABY"){
   //   	var issue_status = new ChartComponent();
   //   	issue_status.setDimensions (6, 4);
 		// Component.addComponent (issue_status);
-		// stackedColumnChar(issue_status,"Issue_status","http://10.116.136.13:8080/"+ProjectNmae+"/DiffVersion");
+		// stackedColumnChar(issue_status,"Issue_status","http://10.116.136.13:7108/"+ProjectNmae+"/DiffVersion");
 
 		var so_far_status = new ChartComponent();
     	so_far_status.setDimensions (12, 4);
 		Component.addComponent (so_far_status);
-		stackedColumnChar(so_far_status,"JIRA issue status in diff. versions","http://10.116.136.13:8080/"+ProjectNmae+"/DiffVersionSoFar");
+		stackedColumnChar(so_far_status,"JIRA issue status in diff. versions","http://10.116.136.13:7108/"+ProjectNmae+"/DiffVersionSoFar");
     
 		/** Show Line chart  **/
 	    var daily_status = new ChartComponent();
 		Component.addComponent (daily_status);
-		LineChar("BABY",daily_status,"JIRA issue remain by time(Daily)","http://10.116.136.13:8080/"+ProjectNmae+"/DiffDate");
+		LineChar("BABY",daily_status,"JIRA issue remain by time(Daily)","http://10.116.136.13:7108/"+ProjectNmae+"/DiffDate");
     }
     
-	
+	var table = new TableComponent();
+    Component.addComponent (table);
+    TableChar(table,"Remain Issue Time spent","http://10.116.136.13:7108/"+ProjectNmae+"/IssueTimeSpent"); //(Component,CaptionNmae,Link)
+
 
 	// var weekly_status = new ChartComponent();
 	// Component.addComponent (weekly_status);
-	// LineChar(weekly_status,"Version_status(Weekly)","http://10.116.136.13:8080/"+ProjectNmae+"/WeekRemain");
+	// LineChar(weekly_status,"Version_status(Weekly)","http://10.116.136.13:7108/"+ProjectNmae+"/WeekRemain");
 }
+
+function kpichart (Component,AddrLink) {
+	// body...
+    Component.setDimensions (3, 3);
+    $.get(AddrLink, function (data) {
+		Component.setValue ( data['Week'], {
+		    numberPrefix : "Week "    
+		});
+	    Component.setCaption ( "Updated "+data['LastUpdate'] );
+    });
+}
+
+function TableChar(Component,CaptionName,AddrLink) {
+    Component.setCaption (CaptionName);
+    Component.addColumn ("key", "Key" ,{rawHTML:true});
+    Component.addColumn ("summary", "Summary",{textAlign:"left",textBoldFlag:true});
+    Component.addColumn ("priority", "Priority");
+    Component.addColumn ("date", "Till today");
+    Component.setDimensions (12, 4);
+    Component.lock ();
+
+    var collectData = [];
+    $.get(AddrLink, function (data) {
+            // alert(data.length)
+            for(i=0; i< data.length ;i++ )
+            {
+                Component.addRow ({
+	                "key": "<a href=http://jira.sw.studio.htc.com/browse/"+data[i]['Key']+">"+data[i]['Key']+"</a>",
+	                "summary": data[i]['Summary'],
+	                "priority": data[i]['Priority'],
+	                "date": Math.abs(data[i]['date'])})
+            }
+
+    });
+    Component.unlock ();
+}
+
+
+
 
 function pieChar(Component,CaptionName,AddrLink) {
     
@@ -139,7 +187,7 @@ function stackedColumnChar(Component,CaptionName,AddrLink) {
 	Component.lock ();	
 	
 	$.get(AddrLink, function (data) {
-	// $.get("http://10.116.136.13:8080/lookup/BABY", function (data) {
+	// $.get("http://10.116.136.13:7108/lookup/BABY", function (data) {
 		Component.setLabels (data['Name']); // You can also use data.categories
         Component.addSeries ("Create", "Create", data['CreateCounter'],{
         	seriesStacked: true
