@@ -391,7 +391,7 @@ func DiffDate(ProjectName string) JsonResult {
 	// for key, value := range ReturnJson {
 	// 	log.Println(ProjectName, key, value)
 	// }
-	log.Println(ReturnJson)
+	// log.Println(ReturnJson)
 	return ReturnJson
 }
 
@@ -399,7 +399,9 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
 	// Date Create
 
-	DateRemainCreateSQL := "SELECT DATE(CreatedTime) as CreateDate FROM Issues WHERE `Key` LIKE '" + ProjectName + "-%' group by CreateDate "
+	DateRemainCreateSQL := "SELECT * from (select date(UpdatedTime) as date from Issues  WHERE `Key` LIKE 'TYGH-%'  " +
+		" union " +
+		" select date(CreatedTime) as date  from Issues WHERE `Key` LIKE 'TYGH-%'  ) as a GROUP by a.date "
 	CreateDateRemains, err := db.Query(DateRemainCreateSQL)
 	checkerr(DateRemainCreateSQL, err)
 	var APPDateReaminResult []JiraIssuesDateRemain
@@ -521,7 +523,6 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 			}
 			FixVersionsROW.Close()
 		}
-
 	}
 	Issuess.Close()
 	db.Close()
@@ -533,21 +534,11 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 	APPRemain := 0
 	for key, _ := range WEBDateReaminResult {
 		WEBRemain = (WEBRemain + WEBDateReaminResult[key].CreateCounter) - WEBDateReaminResult[key].CloseCounter
-		// if key == 0 {
-		// 	WEBDateReaminResult[key].RemainCounter = 0
-		// } else {
 		WEBDateReaminResult[key].RemainCounter = WEBRemain
-		// }
-		// WEBRemain = (WEBRemain + WEBDateReaminResult[key].CreateCounter) - WEBDateReaminResult[key].CloseCounter
 	}
 	for key, _ := range APPDateReaminResult {
 		APPRemain = (APPRemain + APPDateReaminResult[key].CreateCounter) - APPDateReaminResult[key].CloseCounter
-		// if key == 0 {
-		// 	APPDateReaminResult[key].RemainCounter = 0
-		// } else {
 		APPDateReaminResult[key].RemainCounter = APPRemain
-		// }
-		// APPRemain = (APPRemain + APPDateReaminResult[key].CreateCounter) - APPDateReaminResult[key].CloseCounter
 	}
 
 	var ReturnJsonAPP JsonResult
@@ -568,12 +559,13 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 	// log.Println(ReturnJsonAPP, ReturnJsonWEB)
 	return ReturnJsonAPP, ReturnJsonWEB
 }
+
 func PieChart(ProjectName string, TYPE string) JsonResultPie {
 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
 	var ReturnJson JsonResult
 	var ReturnJsonPie JsonResultPie
 	PrioritySQL := "Select `" + TYPE + "` FROM `Issues` WHERE `Key` like '" + ProjectName + "-%' group by `" + TYPE + "` "
-
+	log.Println(PrioritySQL)
 	PriorityRows, err := db.Query(PrioritySQL)
 	checkerr(PrioritySQL, err)
 	for PriorityRows.Next() {
@@ -581,6 +573,7 @@ func PieChart(ProjectName string, TYPE string) JsonResultPie {
 			tmpName string
 		)
 		PriorityRows.Scan(&tmpName)
+		log.Println(tmpName)
 		if tmpName != "" {
 			ReturnJson.Name = append(ReturnJson.Name, tmpName)
 			ReturnJsonPie.Name = append(ReturnJsonPie.Name, tmpName)
@@ -633,7 +626,7 @@ func IssueTimespent(ProjectName string) []JsonResultTable {
 	for RemainIssues.Next() {
 		var tmpRemainIssue JsonResultTable
 		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate)
-		log.Println(tmpRemainIssue)
+		// log.Println(tmpRemainIssue)
 		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
 
 	}
