@@ -14,6 +14,8 @@ StandaloneDashboard(function(db){
 	 var db2 = new Dashboard();
 	 projectModel(db2,"BABY"); //(Component,ProjectNmae)
 
+	// var db3 = new Dashboard();
+	// projectModel(db3,"MMHDRUG"); //(Component,ProjectNmae)
 
 	db.addDashboardTab(db1, {
         title: 'TYGH project',
@@ -23,6 +25,10 @@ StandaloneDashboard(function(db){
         title: 'Baby project',
         //active: true
     });
+    //db.addDashboardTab(db3, {
+      //  title: 'MMH project',
+        //active: true
+    //});
 
 },{tabbed: true});
 
@@ -41,11 +47,11 @@ function projectModel(Component,ProjectNmae) {
 	/** Show Pie chart  **/
 	var status = new ChartComponent();
 	Component.addComponent (status);
-	pieChar(status,"Status","http://"+location.hostname+":7108/"+ProjectNmae+"/Resolution"); //(Component,CaptionNmae,Link)
+	pieChar(status,"Resolution","http://"+location.hostname+":7108/"+ProjectNmae+"/Resolution"); //(Component,CaptionNmae,Link)
 	/** Show Pie chart  **/
 	var resolution = new ChartComponent();
 	Component.addComponent (resolution);
-	pieChar(resolution,"Resolution","http://"+location.hostname+":7108/"+ProjectNmae+"/Status"); //(Component,CaptionNmae,Link)
+	pieChar(resolution,"Status","http://"+location.hostname+":7108/"+ProjectNmae+"/Status"); //(Component,CaptionNmae,Link)
 
 	/** Show Stacked Column chart  **/
 	if(ProjectNmae == "TYGH"){
@@ -123,15 +129,15 @@ function TableChar(Component,CaptionName,AddrLink) {
 
     var collectData = [];
     $.get(AddrLink, function (data) {
-            // alert(data.length)
-            for(i=0; i< data.length ;i++ )
-            {
-                Component.addRow ({
-	                "key": "<a href="+mydata[0].jirapath+data[i]['Key']+">"+data[i]['Key']+"</a>",
-	                "summary": data[i]['Summary'],
-	                "priority": data[i]['Priority'],
-	                "date": Math.abs(data[i]['date'])})
-            }
+        // alert(data.length)
+        for(i=0; i< data.length ;i++ )
+        {
+            Component.addRow ({
+                "key": "<a href="+mydata[0].jirapath+data[i]['Key']+">"+data[i]['Key']+"</a>",
+                "summary": data[i]['Summary'],
+                "priority": data[i]['Priority'],
+                "date": Math.abs(data[i]['date'])})
+        }
     });
     Component.unlock ();
 }
