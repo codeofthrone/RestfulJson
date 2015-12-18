@@ -5,7 +5,7 @@
 // maintain the most stable and secure 
 
 StandaloneDashboard(function(db){
-	var mydata = JSON.parse(config);
+	
 	db.setTabbedDashboardTitle ("HC300000 Dashboard");
 
 	var db1 = new Dashboard();
@@ -112,6 +112,7 @@ function kpichart (Component,AddrLink) {
 }
 
 function TableChar(Component,CaptionName,AddrLink) {
+	var mydata = JSON.parse(config);
     Component.setCaption (CaptionName);
     Component.addColumn ("key", "Key" ,{rawHTML:true});
     Component.addColumn ("summary", "Summary",{textAlign:"left",textBoldFlag:true});
@@ -126,7 +127,7 @@ function TableChar(Component,CaptionName,AddrLink) {
             for(i=0; i< data.length ;i++ )
             {
                 Component.addRow ({
-	                "key": "<a href="+config[0].jirapath+data[i]['Key']+">"+data[i]['Key']+"</a>",
+	                "key": "<a href="+mydata[0].jirapath+data[i]['Key']+">"+data[i]['Key']+"</a>",
 	                "summary": data[i]['Summary'],
 	                "priority": data[i]['Priority'],
 	                "date": Math.abs(data[i]['date'])})
