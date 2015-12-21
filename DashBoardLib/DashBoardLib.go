@@ -565,7 +565,7 @@ func PieChart(ProjectName string, TYPE string) JsonResultPie {
 	var ReturnJson JsonResult
 	var ReturnJsonPie JsonResultPie
 	PrioritySQL := "Select `" + TYPE + "` FROM `Issues` WHERE `Key` like '" + ProjectName + "-%' group by `" + TYPE + "` "
-	log.Println(PrioritySQL)
+	// log.Println(PrioritySQL)
 	PriorityRows, err := db.Query(PrioritySQL)
 	checkerr(PrioritySQL, err)
 	for PriorityRows.Next() {
@@ -573,10 +573,13 @@ func PieChart(ProjectName string, TYPE string) JsonResultPie {
 			tmpName string
 		)
 		PriorityRows.Scan(&tmpName)
-		log.Println(tmpName)
+		// log.Println(tmpName)
 		if tmpName != "" {
 			ReturnJson.Name = append(ReturnJson.Name, tmpName)
 			ReturnJsonPie.Name = append(ReturnJsonPie.Name, tmpName)
+		} else if tmpName == "" && TYPE == "Resolution" {
+			ReturnJson.Name = append(ReturnJson.Name, tmpName)
+			ReturnJsonPie.Name = append(ReturnJsonPie.Name, "Unresolved")
 		}
 	}
 	PriorityRows.Close()
