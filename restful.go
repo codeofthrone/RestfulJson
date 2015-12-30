@@ -30,62 +30,114 @@ func main() {
 			ProjectName := req.PathParam("project")
 			TypeName := req.PathParam("type")
 			switch {
-			case TypeName == "DiffVersionAPP":
-				ReturnResult, _ := dashboardlib.TYGHDiffVersion(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "DiffVersionWEB":
-				_, ReturnResult := dashboardlib.TYGHDiffVersion(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "DiffVersionSoFarAPP":
-				ReturnResult, _ := dashboardlib.TYGHDiffVersionSoFarRemain(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "DiffVersionSoFarWEB":
-				_, ReturnResult := dashboardlib.TYGHDiffVersionSoFarRemain(ProjectName)
-				w.WriteJson(&ReturnResult)
-
-			case TypeName == "TYGHDiffDate":
-				ReturnResultAPP, ReturnResultWEB := dashboardlib.TYGHDiffDate(ProjectName)
-				var ReturnResult []dashboardlib.JsonResult
-				ReturnResult = append(ReturnResult, ReturnResultAPP, ReturnResultWEB)
-				w.WriteJson(&ReturnResult)
-
-			case TypeName == "DiffVersion":
-				ReturnResult := dashboardlib.DiffVersion(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "DiffVersionSoFar":
-				ReturnResult := dashboardlib.DiffVersionSoFarRemain(ProjectName)
-				w.WriteJson(&ReturnResult)
-
-			case TypeName == "DiffDate":
-				ReturnResult := dashboardlib.DiffDate(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "WeekRemain":
-				ReturnResult := dashboardlib.WeekRemain(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "IssueTimeSpent":
-				ReturnResult := dashboardlib.IssueTimespent(ProjectName)
-				w.WriteJson(&ReturnResult)
-			case TypeName == "IssueType":
-				fallthrough
-			case TypeName == "Priority":
-				fallthrough
-			case TypeName == "Resolution":
-				fallthrough
-			case TypeName == "Status":
-				ReturnResult := dashboardlib.PieChart(ProjectName, TypeName)
-				w.WriteJson(&ReturnResult)
-
 			case TypeName == "LastUpdate":
 				ReturnResult := dashboardlib.LastUpdateWeek()
 				w.WriteJson(&ReturnResult)
+			case TypeName == "ProjectSummary":
+				ReturnResult := dashboardlib.ProjectSummary(ProjectName)
+				w.WriteJson(&ReturnResult)
 
+			case ProjectName == "TYGH":
+				switch {
+				case TypeName == "TYGHDiffDate":
+					ReturnResultAPP, ReturnResultWEB := dashboardlib.TYGHDiffDate(ProjectName)
+					var ReturnResult []dashboardlib.JsonResult
+					ReturnResult = append(ReturnResult, ReturnResultAPP, ReturnResultWEB)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffVersionAPP":
+					ReturnResult, _ := dashboardlib.TYGHDiffVersion(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffVersionWEB":
+					_, ReturnResult := dashboardlib.TYGHDiffVersion(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffVersionSoFarAPP":
+					ReturnResult, _ := dashboardlib.TYGHDiffVersionSoFarRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffVersionSoFarWEB":
+					_, ReturnResult := dashboardlib.TYGHDiffVersionSoFarRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+
+				case TypeName == "DiffVersionSoFar":
+					ReturnResult := dashboardlib.DiffVersionSoFarRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffDate":
+					ReturnResult := dashboardlib.DiffDate(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "WeekRemain":
+					ReturnResult := dashboardlib.WeekRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+
+				case TypeName == "IssueTimeSpent":
+					ReturnResult := dashboardlib.IssueTimespent(ProjectName)
+					w.WriteJson(&ReturnResult)
+
+				case TypeName == "DueDateRemain":
+					ReturnResult := dashboardlib.DueDateRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				}
+
+			case ProjectName == "BABY":
+				switch {
+				case TypeName == "IssueTimeSpent":
+					ReturnResult := dashboardlib.BABYIssueTimespent()
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DueDateRemain":
+					ReturnResult := dashboardlib.BABYDueDateRemain()
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffVersionSoFar":
+					ReturnResult := dashboardlib.DiffVersionSoFarRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffDate":
+					ReturnResultA, ReturnResultI := dashboardlib.BABYDiffDate()
+					var BABYReturnResult []dashboardlib.JsonResult
+					BABYReturnResult = append(BABYReturnResult, ReturnResultA, ReturnResultI)
+					w.WriteJson(&BABYReturnResult)
+				case TypeName == "WeekRemain":
+					ReturnResult := dashboardlib.WeekRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "ProjectSummary":
+					ReturnResult := dashboardlib.ProjectSummary(ProjectName)
+					w.WriteJson(&ReturnResult)
+				}
+			case ProjectName == "IOS":
+				switch {
+				case TypeName == "DiffVersionSoFar":
+					ReturnResult := dashboardlib.BABYIOSDiffVersionSoFarRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+					// case TypeName == "DiffDate":
+					// 	ReturnResult := dashboardlib.BABYIOSDiffDate(ProjectName)
+					// 	w.WriteJson(&ReturnResult)
+				}
+			case ProjectName == "MMHDRUG":
+				switch {
+				case TypeName == "IssueTimeSpent":
+					ReturnResult := dashboardlib.IssueTimespent(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DueDateRemain":
+					ReturnResult := dashboardlib.DueDateRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffVersionSoFar":
+					ReturnResult := dashboardlib.DiffVersionSoFarRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffDate":
+					ReturnResult := dashboardlib.DiffDate(ProjectName)
+					w.WriteJson(&ReturnResult)
+				case TypeName == "WeekRemain":
+					ReturnResult := dashboardlib.WeekRemain(ProjectName)
+					w.WriteJson(&ReturnResult)
+
+				}
 			}
-
 		}),
 	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(":7108", api.MakeHandler()))
+	http.Handle("/api/", http.StripPrefix("/api", api.MakeHandler()))
+
+	http.Handle("/dashboard/", http.StripPrefix("/dashboard/", http.FileServer(http.Dir("./dashboard/"))))
+
+	log.Fatal(http.ListenAndServe(":7108", nil))
 }

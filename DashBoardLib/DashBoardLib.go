@@ -6,6 +6,7 @@ import (
 	"github.com/pmylund/sortutil"
 	// "html/template"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -66,6 +67,30 @@ type JsonResultTable struct {
 	Summary  string `json:"Summary"`
 	Priority string `json:"Priority"`
 	DiffDate int    `json:"date"`
+	Assignee string `json:"assignee"`
+}
+
+type ProjectSummaryTable struct {
+	Project       string `json:"Project"`
+	Version       string `json:"Version"`
+	Scenario      string `json:"Scenario"`
+	DataCheck     string `json:"DataCheck"`
+	Auto          string `json:"Auto"`
+	BDI           string `json:"BDI"`
+	Compatibility string `json:"Compatibility"`
+	Security      string `json:"Security"`
+	Other         string `json:"Other"`
+	Battery       string `json:"Battery"`
+	Date          string `json:"Date"`
+}
+
+func stringInSlice(str string, list []string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
 
 func checkerr(str string, err error) {
@@ -87,6 +112,27 @@ func QuerySingle(query string) string {
 	db.Close()
 	return tmp
 }
+
+// func ReleaseDayIssueTable(ProjectName string) RemainIssueResult {
+// 	//TODO
+// 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+// 	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.`Priority`, a.DiffDate, a.`Assignee` from (SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate " +
+// 		"FROM `Issues` WHERE `Key` LIKE '" + ProjectName + "-%' AND Status!='Closed' AND Resolution not like  '% Fix' ORDER BY UpdatedTime AND Status='Closed' )as a " +
+// 		"ORDER by a.DiffDate"
+// 	RemainIssues, err := db.Query(RemainIssueSQL)
+// 	checkerr(RemainIssueSQL, err)
+// 	var RemainIssueResult []JsonResultTable
+// 	for RemainIssues.Next() {
+// 		var tmpRemainIssue JsonResultTable
+// 		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate, &tmpRemainIssue.Assignee)
+// 		// log.Println(tmpRemainIssue)
+// 		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+
+// 	}
+// 	RemainIssues.Close()
+// 	db.Close()
+// 	return RemainIssueResult
+// }
 
 func WeekRemain(ProjectName string) JsonResult {
 	var ReturnJson JsonResult
@@ -324,7 +370,6 @@ func DiffDate(ProjectName string) JsonResult {
 	var ReturnJson JsonResult
 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
 	// Date Create
-
 	DateRemainCreateSQL := "SELECT count(*),CreateDate FROM (SELECT *,DATE(CreatedTime) as CreateDate FROM Issues WHERE `Key` LIKE '" + ProjectName + "-%'  ORDER by CreatedTime) as b GROUP BY CreateDate"
 	CreateDateRemains, err := db.Query(DateRemainCreateSQL)
 	checkerr(DateRemainCreateSQL, err)
@@ -620,7 +665,7 @@ func PieChart(ProjectName string, TYPE string) JsonResultPie {
 
 func IssueTimespent(ProjectName string) []JsonResultTable {
 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
-	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.`Priority`, a.DiffDate from (SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate " +
+	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.`Priority`, a.DiffDate, a.`Assignee` from (SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate " +
 		"FROM `Issues` WHERE `Key` LIKE '" + ProjectName + "-%' AND Status!='Closed' AND Resolution not like  '% Fix' ORDER BY UpdatedTime AND Status='Closed' )as a " +
 		"ORDER by a.DiffDate"
 	RemainIssues, err := db.Query(RemainIssueSQL)
@@ -628,7 +673,7 @@ func IssueTimespent(ProjectName string) []JsonResultTable {
 	var RemainIssueResult []JsonResultTable
 	for RemainIssues.Next() {
 		var tmpRemainIssue JsonResultTable
-		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate)
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate, &tmpRemainIssue.Assignee)
 		// log.Println(tmpRemainIssue)
 		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
 
@@ -652,4 +697,433 @@ func LastUpdateWeek() JsonResultTime {
 	db.Close()
 	// log.Println(returnJson)
 	return returnJson
+}
+
+func DueDateRemain(ProjectName string) []JsonResultTable {
+	//SELECT * FROM `Issues` WHERE `DueDate`!= "0000-00-00" AND Status != 'Closed'  AND `Key` like 'BABY-%' ORDER BY `FixVersions` DESC
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	RemainIssueSQL := "SELECT `Key`, `Summary`, `Priority`, `Assignee` FROM `Issues` WHERE `DueDate`!= '0000-00-00' AND Status != 'Closed'  AND `Key` like '" + ProjectName + "-%' ORDER BY `FixVersions` DESC"
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	var RemainIssueResult []JsonResultTable
+	for RemainIssues.Next() {
+		var tmpRemainIssue JsonResultTable
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.Assignee)
+		// log.Println(tmpRemainIssue)
+		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+	}
+	RemainIssues.Close()
+	db.Close()
+	return RemainIssueResult
+}
+
+func BABYIOSPieChart(ProjectName string, TYPE string) JsonResultPie {
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	var ReturnJson JsonResult
+	var ReturnJsonPie JsonResultPie
+	PrioritySQL := "Select `" + TYPE + "` FROM `Issues` WHERE `Reporter`='Ming_Chiang' AND `Key` like '" + ProjectName + "-%' group by `" + TYPE + "` "
+	// log.Println(PrioritySQL)
+	PriorityRows, err := db.Query(PrioritySQL)
+	checkerr(PrioritySQL, err)
+	for PriorityRows.Next() {
+		var (
+			tmpName string
+		)
+		PriorityRows.Scan(&tmpName)
+		// log.Println(tmpName)
+		if tmpName != "" {
+			ReturnJson.Name = append(ReturnJson.Name, tmpName)
+			ReturnJsonPie.Name = append(ReturnJsonPie.Name, tmpName)
+		} else if tmpName == "" && TYPE == "Resolution" {
+			ReturnJson.Name = append(ReturnJson.Name, tmpName)
+			ReturnJsonPie.Name = append(ReturnJsonPie.Name, "Unresolved")
+		}
+	}
+	PriorityRows.Close()
+	totalcounter := 0
+	for _, Value := range ReturnJson.Name {
+		// log.Println(key, Value)
+		tmpValue := Value
+		TmpCounter := 0
+		SQL := "Select count(*) FROM `Issues` WHERE `Reporter`='Ming_Chiang' AND `Key` like '" + ProjectName + "-%' AND `" + TYPE + "` = ?  "
+		// log.Println(SQL, "="+tmpValue+"=")
+		rows, err := db.Query(SQL, tmpValue)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			err := rows.Scan(&TmpCounter)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// log.Println(TmpCounter)
+		}
+		rows.Close()
+		ReturnJson.CreateCounter = append(ReturnJson.CreateCounter, TmpCounter)
+		totalcounter = totalcounter + TmpCounter
+	}
+
+	for key, _ := range ReturnJson.Name {
+		tmpremain := ((float64)(ReturnJson.CreateCounter[key]) * 100) / (float64)(totalcounter)
+		// log.Println(tmpremain, ReturnJson.CreateCounter[key], totalcounter)
+		ReturnJsonPie.RemainCounter = append(ReturnJsonPie.RemainCounter, tmpremain)
+	}
+	// log.Println(ReturnJsonPie)
+	db.Close()
+	// 	// log.Println(ReturnJson)
+	return ReturnJsonPie
+}
+
+func BABYIOSIssueTimespent(ProjectName string) []JsonResultTable {
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.`Priority`, a.DiffDate, a.`Assignee` from (SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate " +
+		"FROM `Issues` WHERE `Reporter`='Ming_Chiang' AND `Key` LIKE '" + ProjectName + "-%' AND Status!='Done' AND Resolution not like  '% Fix' ORDER BY UpdatedTime AND Status='Closed' )as a " +
+		"ORDER by a.DiffDate"
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	var RemainIssueResult []JsonResultTable
+	for RemainIssues.Next() {
+		var tmpRemainIssue JsonResultTable
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate, &tmpRemainIssue.Assignee)
+		// log.Println(tmpRemainIssue)
+		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+
+	}
+	RemainIssues.Close()
+	db.Close()
+	return RemainIssueResult
+}
+
+func BABYIOSVersionData(ProjectName string) []JiraIssuesStatusDiffVersion {
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	// ProjectName := "TYGH"
+	versSQL := "SELECT Id,Name from ( " +
+		"SELECT f.Id,f.Name,f.Project FROM Fixversions as f LEFT join Versions as v on f.Id = v.Id UNION DISTINCT " +
+		"SELECT v.Id,v.Name,v.Project FROM Fixversions as f RIGHT join Versions as v on f.Id = v.Id) as a where  Project='" + ProjectName + "'  group by a.Id " +
+		"ORDER BY `a`.`Id` ASC"
+	Vers, err := db.Query(versSQL)
+	checkerr(versSQL, err)
+	var DiffVersionResult []JiraIssuesStatusDiffVersion
+	for Vers.Next() {
+		var (
+			IssueVersions JiraIssuesStatusDiffVersion
+			tmpVerId      string
+			tmpVerName    string
+		)
+		Vers.Scan(&tmpVerId, &tmpVerName)
+		IssueVersions.Name = tmpVerName
+		DiffVersionResult = append(DiffVersionResult, IssueVersions)
+	}
+	Vers.Close()
+
+	// // TODO no version
+	sortutil.AscByField(DiffVersionResult, "Name")
+	IssuesSQL := "SELECT Id,FixVersions,Status,Version FROM Issues WHERE `Reporter`='Ming_Chiang' AND `Key` like '" + ProjectName + "-%' AND Resolution not like '% Fix'"
+	Issuess, err := db.Query(IssuesSQL)
+	checkerr(IssuesSQL, err)
+	for Issuess.Next() {
+		var (
+			tmpId             string
+			tmpFixVer         string
+			tmpVer            string
+			tmpStatus         string
+			CreateVersionName []string
+		)
+		Issuess.Scan(&tmpId, &tmpFixVer, &tmpStatus, &tmpVer)
+		// log.Println(tmpId, tmpFixVer, tmpStatus, tmpVer)
+		IssueCreateCounter := 0
+		if tmpVer != "0" {
+			VerDataSQL := " SELECT Data FROM `Version` WHERE `Id` = '" + tmpId + "' AND Enable ='1' "
+			VerDatas, err := db.Query(VerDataSQL)
+			checkerr(VerDataSQL, err)
+			for VerDatas.Next() {
+				var tmpData string
+				VerDatas.Scan(&tmpData)
+				VersNameSQL := " SELECT Name FROM `Versions` WHERE `Sn` = '" + tmpData + "' AND Project ='" + ProjectName + "' "
+				VerName := QuerySingle(VersNameSQL)
+				// log.Println("Create", VerName)
+				CreateVersionName = append(CreateVersionName, VerName)
+				for key, Value := range DiffVersionResult {
+					if Value.Name == VerName {
+						DiffVersionResult[key].CreateCounter++
+						IssueCreateCounter++
+					}
+				}
+			}
+			VerDatas.Close()
+		}
+		// log.Println("Create counter", IssueCreateCounter)
+		if tmpStatus == "Done" {
+			FixVerDataSQL := " SELECT Data FROM `Fixversion` WHERE `Id` = '" + tmpId + "' AND Enable ='1' "
+			VerDatas, err := db.Query(FixVerDataSQL)
+			checkerr(FixVerDataSQL, err)
+			for VerDatas.Next() {
+				var tmpData string
+				VerDatas.Scan(&tmpData)
+				VersNameSQL := " SELECT Name FROM `Fixversions` WHERE `Sn` = '" + tmpData + "' AND Project ='" + ProjectName + "' "
+				VerName := QuerySingle(VersNameSQL)
+				// log.Println("close", VerName)
+				for key, Value := range DiffVersionResult {
+					if Value.Name == VerName && IssueCreateCounter > 0 {
+						DiffVersionResult[key].CloseCounter++
+						IssueCreateCounter--
+					}
+				}
+			}
+		}
+		// log.Println("Close counter", IssueCreateCounter, VersionRemainCounter)
+	}
+	Issuess.Close()
+	db.Close()
+	return DiffVersionResult
+}
+
+func BABYIOSDiffVersion(ProjectName string) JsonResult {
+	DiffVersionResult := BABYIOSVersionData(ProjectName)
+	var ReturnJson JsonResult
+	VersionRemainCounter := 0
+	for key, _ := range DiffVersionResult {
+		if key == 0 {
+			DiffVersionResult[key].RemainCounter = 0
+			VersionRemainCounter = DiffVersionResult[key].CreateCounter - DiffVersionResult[key].CloseCounter
+		} else {
+			DiffVersionResult[key].RemainCounter = VersionRemainCounter
+			VersionRemainCounter = VersionRemainCounter + DiffVersionResult[key].CreateCounter - DiffVersionResult[key].CloseCounter
+		}
+		ReturnJson.Name = append(ReturnJson.Name, DiffVersionResult[key].Name)
+		ReturnJson.CreateCounter = append(ReturnJson.CreateCounter, DiffVersionResult[key].CreateCounter)
+		ReturnJson.CloseCounter = append(ReturnJson.CloseCounter, DiffVersionResult[key].CloseCounter)
+		ReturnJson.RemainCounter = append(ReturnJson.RemainCounter, DiffVersionResult[key].RemainCounter)
+		// log.Println(key, Value)
+	}
+	// log.Println(ReturnJson)
+	return ReturnJson
+}
+
+func BABYIOSDiffVersionSoFarRemain(ProjectName string) JsonResult {
+	ReturnJson := BABYIOSDiffVersion(ProjectName)
+	soFarClose := 0
+	for Key, _ := range ReturnJson.Name {
+		tmp := ReturnJson.CloseCounter[Key]
+		if Key == 0 {
+			ReturnJson.CloseCounter[Key] = 0
+		} else {
+			ReturnJson.CloseCounter[Key] = soFarClose
+		}
+		soFarClose = soFarClose + tmp
+	}
+	return ReturnJson
+}
+
+func BABYIOSDiffDate(ProjectName string) JsonResult {
+	var ReturnJson JsonResult
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	// Date Create
+	DateRemainCreateSQL := "SELECT count(*),CreateDate FROM (SELECT *,DATE(CreatedTime) as CreateDate FROM Issues WHERE `Reporter`='Ming_Chiang' AND `Key` LIKE '" + ProjectName + "-%'  ORDER by CreatedTime) as b GROUP BY CreateDate"
+	// log.Println(DateRemainCreateSQL)
+	CreateDateRemains, err := db.Query(DateRemainCreateSQL)
+	checkerr(DateRemainCreateSQL, err)
+	var DateReaminResult []JiraIssuesDateRemain
+	for CreateDateRemains.Next() {
+		var (
+			DateRemain    JiraIssuesDateRemain
+			tmpCounter    int
+			tmpCreateDate string
+		)
+		CreateDateRemains.Scan(&tmpCounter, &tmpCreateDate)
+		DateRemain.Name = tmpCreateDate
+		DateRemain.CreateCounter = tmpCounter
+		DateReaminResult = append(DateReaminResult, DateRemain)
+	}
+	CreateDateRemains.Close()
+
+	sortutil.AscByField(DateReaminResult, "Name")
+	IssuesSQL := "SELECT Id FROM Issues WHERE `Reporter`='Ming_Chiang' AND `Status`='Done' AND `Key` like '" + ProjectName + "-%' "
+	Issuess, err := db.Query(IssuesSQL)
+	checkerr(IssuesSQL, err)
+	for Issuess.Next() {
+		var tmpId string
+		var tmpresult JiraIssuesDateRemain
+		Issuess.Scan(&tmpId)
+		HistorySQL := "SELECT date(Created) FROM `Historys` WHERE `Jid` = '" + tmpId + "' AND Tostring='Done' ORDER BY Sn DESC LIMIT 1"
+		ResolveDate := QuerySingle(HistorySQL)
+		appendflag := 0
+		if ResolveDate == "" {
+			HistorySQL := "SELECT date(Created) FROM `Historys` WHERE `Jid` = '" + tmpId + "' AND Tostring='Done' ORDER BY Sn DESC LIMIT 1"
+			ResolveDate = QuerySingle(HistorySQL)
+		}
+		// log.Println("Resolve date", ResolveDate, tmpId)
+		for Key, Value := range DateReaminResult {
+			if Value.Name == ResolveDate {
+				appendflag++
+				DateReaminResult[Key].CloseCounter++
+			}
+		}
+		// log.Println(ResolveDate, tmpId, appendflag)
+		if appendflag == 0 {
+
+			tmpresult.Name = ResolveDate
+			tmpresult.CloseCounter++
+			DateReaminResult = append(DateReaminResult, tmpresult)
+		}
+	}
+	Issuess.Close()
+	db.Close()
+
+	OldResultRemain := 0
+	sortutil.AscByField(DateReaminResult, "Name")
+	for key, Value := range DateReaminResult {
+		if key == 0 {
+			ReturnJson.RemainCounter = append(ReturnJson.RemainCounter, 0)
+		} else {
+			ReturnJson.RemainCounter = append(ReturnJson.RemainCounter, OldResultRemain)
+		}
+		OldResultRemain = (OldResultRemain + DateReaminResult[key].CreateCounter) - DateReaminResult[key].CloseCounter
+		ReturnJson.Name = append(ReturnJson.Name, Value.Name)
+		ReturnJson.CreateCounter = append(ReturnJson.CreateCounter, Value.CreateCounter)
+		ReturnJson.CloseCounter = append(ReturnJson.CloseCounter, Value.CloseCounter)
+	}
+	// for key, value := range ReturnJson {
+	// 	log.Println(ProjectName, key, value)
+	// }
+	// log.Println(ReturnJson)
+	return ReturnJson
+}
+
+func BABYIOSDueDateRemain(ProjectName string) []JsonResultTable {
+	//SELECT * FROM `Issues` WHERE `DueDate`!= "0000-00-00" AND Status != 'Closed'  AND `Key` like 'BABY-%' ORDER BY `FixVersions` DESC
+	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
+	RemainIssueSQL := "SELECT `Key`, `Summary`, `Priority`, `Assignee` FROM `Issues` WHERE `DueDate`!= '0000-00-00' AND `Reporter`='Ming_Chiang' AND Status != 'Done' AND `Key` like '" + ProjectName + "-%' ORDER BY `FixVersions` DESC"
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	var RemainIssueResult []JsonResultTable
+	for RemainIssues.Next() {
+		var tmpRemainIssue JsonResultTable
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.Assignee)
+		// log.Println(tmpRemainIssue)
+		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+	}
+	RemainIssues.Close()
+	db.Close()
+	return RemainIssueResult
+}
+
+func BABYIssueTimespent() []JsonResultTable {
+	db, _ := sql.Open("mysql", "eli:eli@/Jira_Data")
+
+	RemainIssueSQL := "SELECT a.`Key`, a.`Summary`, a.`Priority`, a.DiffDate, a.`Assignee` from " +
+		"( SELECT *,DATEDIFF(DATE(`UpdatedTime`),DATE(CURDATE() )) AS DiffDate 	FROM `Issues` WHERE  " +
+		"(`Reporter`='Ming_Chiang' AND `Key` LIKE 'IOS-%' AND Status!='Done' AND Resolution not like  '% Fix' ) OR " +
+		"(`Key` LIKE 'BABY-%' AND Status!='Closed' AND Resolution not like  '% Fix'  ) )as a  ORDER by a.DiffDate"
+
+	var RemainIssueResult []JsonResultTable
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	for RemainIssues.Next() {
+		var tmpRemainIssue JsonResultTable
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.DiffDate, &tmpRemainIssue.Assignee)
+		// log.Println(tmpRemainIssue)
+		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+	}
+	RemainIssues.Close()
+
+	sortutil.AscByField(RemainIssueResult, "DiffDate")
+	// log.Println(RemainIssueResult)
+
+	db.Close()
+	return RemainIssueResult
+}
+
+func BABYDueDateRemain() []JsonResultTable {
+	//SELECT * FROM `Issues` WHERE `DueDate`!= "0000-00-00" AND Status != 'Closed'  AND `Key` like 'BABY-%' ORDER BY `FixVersions` DESC
+	db, _ := sql.Open("mysql", "eli:eli@/Jira_Data")
+	RemainIssueSQL := "SELECT `Key`, `Summary`, `Priority`, `Assignee` FROM `Issues` WHERE (`DueDate`!= '0000-00-00' AND `Reporter`='Ming_Chiang' AND Status != 'Done' AND `Key` like 'IOS-%') OR (`DueDate`!= '0000-00-00' AND Status != 'Closed'  AND `Key` like 'BABY-%' )ORDER BY `FixVersions` DESC"
+	var RemainIssueResult []JsonResultTable
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	for RemainIssues.Next() {
+		var tmpRemainIssue JsonResultTable
+		RemainIssues.Scan(&tmpRemainIssue.Name, &tmpRemainIssue.Summary, &tmpRemainIssue.Priority, &tmpRemainIssue.Assignee)
+		// log.Println(tmpRemainIssue)
+		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+	}
+	RemainIssues.Close()
+	db.Close()
+	return RemainIssueResult
+}
+
+func BABYDiffDate() (JsonResult, JsonResult) {
+	JsonResult_I := BABYIOSDiffDate("IOS")
+	JsonResult_A := DiffDate("BABY")
+
+	var newandroidjson JsonResult
+	var newiosjson JsonResult
+	var tmpName []string
+
+	for _, value := range JsonResult_A.Name {
+		if !stringInSlice(value, newandroidjson.Name) {
+			tmpName = append(tmpName, value)
+		}
+	}
+
+	for _, value := range JsonResult_I.Name {
+		if !stringInSlice(value, newandroidjson.Name) {
+			tmpName = append(tmpName, value)
+		}
+	}
+
+	sort.Strings(tmpName)
+
+	newandroidjson.Name = append(newandroidjson.Name, tmpName...)
+	newiosjson.Name = append(newiosjson.Name, tmpName...)
+
+	Androidremain := 0
+	Iosremain := 0
+
+	for _, nvalue := range newandroidjson.Name {
+		for key, value := range JsonResult_A.Name {
+			if value == nvalue {
+				Androidremain = JsonResult_A.RemainCounter[key]
+			}
+		}
+		newandroidjson.RemainCounter = append(newandroidjson.RemainCounter, Androidremain)
+	}
+
+	for _, nvalue := range newiosjson.Name {
+		for key, value := range JsonResult_I.Name {
+			if value == nvalue {
+				Iosremain = JsonResult_I.RemainCounter[key]
+			}
+		}
+		newiosjson.RemainCounter = append(newiosjson.RemainCounter, Iosremain)
+	}
+
+	// for Key, value := range newandroidjson.Name {
+	// 	log.Println(Key, value, newandroidjson.RemainCounter[Key])
+	// 	log.Println(Key, value, newiosjson.RemainCounter[Key])
+
+	// }
+
+	return newandroidjson, newiosjson
+}
+
+func ProjectSummary(ProjectName string) []ProjectSummaryTable {
+	db, _ := sql.Open("mysql", "eli:eli@/Jira_Data")
+
+	RemainIssueSQL := "SELECT `Project`,`Version`,`Scenario`,`DataCheck`,`Auto`,`BDI`,`Compatibility`,`Security`,`Other`,`Battery`,DATE(`Date`) FROM `Projectsummary` WHERE  Project='" + ProjectName + "'"
+
+	var RemainIssueResult []ProjectSummaryTable
+	RemainIssues, err := db.Query(RemainIssueSQL)
+	checkerr(RemainIssueSQL, err)
+	for RemainIssues.Next() {
+		var tmpRemainIssue ProjectSummaryTable
+		RemainIssues.Scan(&tmpRemainIssue.Project, &tmpRemainIssue.Version, &tmpRemainIssue.Scenario, &tmpRemainIssue.DataCheck, &tmpRemainIssue.Auto, &tmpRemainIssue.BDI, &tmpRemainIssue.Compatibility, &tmpRemainIssue.Security, &tmpRemainIssue.Other, &tmpRemainIssue.Battery, &tmpRemainIssue.Date)
+		// log.Println(tmpRemainIssue)
+		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
+	}
+	RemainIssues.Close()
+
+	db.Close()
+	return RemainIssueResult
 }
