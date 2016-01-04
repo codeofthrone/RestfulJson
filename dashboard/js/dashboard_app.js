@@ -14,11 +14,9 @@ StandaloneDashboard(function(db){
 	 var db2 = new Dashboard();
 	 projectModel(db2,"BABY"); //(Component,ProjectNmae)
 
-//	 var db3 = new Dashboard();
-//	 projectModel(db3,"IOS"); //(Component,ProjectNmae)
-
 	var db4 = new Dashboard();
 	projectModel(db4,"MMHDRUG"); //(Component,ProjectNmae)
+
 
 	db.addDashboardTab(db1, {
         title: 'TYGH project',
@@ -32,6 +30,7 @@ StandaloneDashboard(function(db){
     db.addDashboardTab(db4, {
        title: 'MMH project',
     });
+
 
 },{tabbed: true});
 
@@ -59,7 +58,7 @@ function projectModel(Component,ProjectNmae) {
 
     var tableSummary = new TableComponent();
     Component.addComponent (tableSummary);
-    ProjectSummaryTableChar(tableSummary,"Project summary ","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/ProjectSummary"); //(Component,CaptionNmae,Link)
+    ProjectSummaryTableChar(tableSummary,"Project summary ","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/ProjectSummary",ProjectNmae); //(Component,CaptionNmae,Link)
 
 	var duedatetable = new TableComponent();
 	Component.addComponent (duedatetable);
@@ -87,7 +86,17 @@ function projectModel(Component,ProjectNmae) {
 		/** Show Line chart  **/
 	    var daily_status = new ChartComponent();
 		Component.addComponent (daily_status);
-		LineChar("TYGH",daily_status,"JIRA issue remain by time(Daily)","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/TYGHDiffDate");
+		// LineChar("TYGH",daily_status,"JIRA issue remain by time(Daily)","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/TYGHDiffDate");
+        daily_status.setCaption("TYGH");
+        daily_status.setDimensions (12, 4);
+        daily_status.lock ();  
+        $.get("http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/TYGHDiffDate", function (data) {
+            daily_status.setLabels (data[0]['Name']); // You can also use data.categories
+            daily_status.addSeries ("APP", "APP", data[0]['RemainCounter'],{seriesDisplayType: "line"  });
+            daily_status.addSeries ("WEB", "WEB", data[1]['RemainCounter'],{seriesDisplayType: "line"  });
+            daily_status.unlock ();
+        });
+
     }else if (ProjectNmae == "MMHDRUG" ) {
   //   	var issue_status = new ChartComponent();
   //   	issue_status.setDimensions (6, 4);
@@ -99,10 +108,18 @@ function projectModel(Component,ProjectNmae) {
 		Component.addComponent (so_far_status);
 		stackedColumnChar(so_far_status,"JIRA issue status in diff. versions","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffVersionSoFar");
     
-		/** Show Line chart  **/
+		// /** Show Line chart  **/
 	    var daily_status = new ChartComponent();
 		Component.addComponent (daily_status);
-		LineChar("MMHDRUG",daily_status,"JIRA issue remain by time(Daily)","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffDate");
+		// LineChar("MMHDRUG",daily_status,"JIRA issue remain by time(Daily)","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffDate");
+        daily_status.setCaption("JIRA issue remain by time(Daily)");
+        daily_status.setDimensions (12, 4);
+        daily_status.lock ();  
+        $.get("http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffDate", function (data) {
+            daily_status.setLabels (data['Name']); // You can also use data.categories
+            daily_status.addSeries ("APP", "APP",  data['RemainCounter'],{ seriesDisplayType: "line"  });
+        });
+        daily_status.unlock ();
     }else if (ProjectNmae == "BABY"  ) {
 		var so_far_statusa = new ChartComponent();
     	so_far_statusa.setDimensions (12, 4);
@@ -117,7 +134,16 @@ function projectModel(Component,ProjectNmae) {
 		/** Show Line chart  **/
 	    var daily_status = new ChartComponent();
 		Component.addComponent (daily_status);
-		LineChar("BABY",daily_status,"JIRA issue remain by time(Daily)","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffDate");
+        daily_status.setCaption("JIRA issue remain by time(Daily)");
+		// LineChar("BABY",daily_status,"JIRA issue remain by time(Daily)","http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffDate");
+        daily_status.setDimensions (12, 4);
+        daily_status.lock ();  
+        $.get("http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectNmae+"/DiffDate", function (data) {
+            daily_status.setLabels (data[0]['Name']); // You can also use data.categories
+            daily_status.addSeries ("Android", "Android", data[0]['RemainCounter'],{ seriesDisplayType: "line"  });
+            daily_status.addSeries ("IOS", "IOS", data[1]['RemainCounter'],{   seriesDisplayType: "line" });
+        });
+        daily_status.unlock ();
     }
 
 	// var weekly_status = new ChartComponent();
@@ -183,7 +209,7 @@ function DueDateTableChar(Component,CaptionName,AddrLink) {
     Component.addColumn ("summary", "Summary",{textAlign:"left",textBoldFlag:true});
     Component.addColumn ("priority", "Priority",{columnWidth:"128",rawHTML:true});
     Component.addColumn ("assignee", "Assignee",{columnWidth:"128"});
-    Component.setDimensions (12, 2);
+    Component.setDimensions (12, 4);
     Component.lock ();
 	// Component.unlock ();
 
@@ -220,7 +246,7 @@ function DueDateTableChar(Component,CaptionName,AddrLink) {
 }
 
 
-function ProjectSummaryTableChar(Component,CaptionName,AddrLink) {
+function ProjectSummaryTableChar(Component,CaptionName,AddrLink,ProjectNmae) {
 	var mydata = JSON.parse(config);
     Component.setCaption (CaptionName);
     //`Project`,`Version`,`Scenario`,`DataCheck`,`Auto`,`BDI`,`Compatibility`,`Security`,`Other`,`Battery`,`Date`
@@ -243,7 +269,7 @@ function ProjectSummaryTableChar(Component,CaptionName,AddrLink) {
         {
             Component.addRow ({
                 // "project": data[i]['Project'],
-                "version": "<a href="+data[i]['Version']+">"+data[i]['Version']+"</a>",
+                "version": "<a href="+"upload/"+ProjectNmae+"/"+data[i]['FileName']+">"+data[i]['Version']+"</a>",
                 // "scenario": data[i]['Scenario'],
                 "scenario": TextColor("Scenario", data[i]['Scenario'] ),
                 "dataCheck":  TextColor("DataCheck", data[i]['DataCheck'] ),
@@ -316,36 +342,20 @@ function LineChar(ProjectNmae,Component,CaptionName,AddrLink) {
 	Component.setDimensions (12, 4);
 	
 	if(ProjectNmae == "TYGH"){
-		Component.lock ();	
+    Component.lock ();  
 		$.get(AddrLink, function (data) {
-			
 			Component.setLabels (data[0]['Name']); // You can also use data.categories
-
-	        Component.addSeries ("APP", "APP", data[0]['RemainCounter'],{
-	        	seriesDisplayType: "line"
-
-	        });
-	        Component.addSeries ("WEB", "WEB", data[1]['RemainCounter'],{
-	        	seriesDisplayType: "line"
-
-	        });
+	        Component.addSeries ("APP", "APP", data[0]['RemainCounter'],{seriesDisplayType: "line"  });
+	        Component.addSeries ("WEB", "WEB", data[1]['RemainCounter'],{seriesDisplayType: "line"  });
 	        // Don't forget to call unlock or the data won't be displayed
 		});
         Component.unlock ();
 	}else if (ProjectNmae == "BABY"){
 		Component.lock ();	
 		$.get(AddrLink, function (data) {
-			
 			Component.setLabels (data[0]['Name']); // You can also use data.categories
-
-	        Component.addSeries ("Android", "Android", data[0]['RemainCounter'],{
-	        	seriesDisplayType: "line"
-
-	        });
-	        Component.addSeries ("IOS", "IOS", data[1]['RemainCounter'],{
-	        	seriesDisplayType: "line"
-
-	        });
+	        Component.addSeries ("Android", "Android", data[0]['RemainCounter'],{ seriesDisplayType: "line"  });
+	        Component.addSeries ("IOS", "IOS", data[1]['RemainCounter'],{ 	seriesDisplayType: "line" });
 	        // Don't forget to call unlock or the data won't be displayed
 	        // Component.unlock ();
 		});
@@ -395,13 +405,19 @@ function TextColor(ColumnName,ColumnValue){
 		default:
 		passrate = 100 ;
 	}
-	console.log(passrate +" "+ColumnValue+" "+ColumnName);
-	if ( ColumnValue < passrate ) {
-		parorityHTML = "<font style='color:red;font-weight:900;font-size:18px' >" ;
-	}else  {
-		parorityHTML = "<font  >" ;
-	};
-	parorityHTML = parorityHTML + ColumnValue + "</font>" ;
+	// console.log(passrate +" "+ColumnValue+" "+ColumnName);
+    if ( ColumnValue == "0" ) {
+        parorityHTML = "<font style='color:black;font-weight:100;font-size:6px' >" ;
+        parorityHTML = parorityHTML + "NA" + "</font>" ;
+    }else {
+        if ( ColumnValue < passrate ) {
+            parorityHTML = "<font style='color:red;font-weight:900;font-size:18px' >" ;
+        }else  {
+            parorityHTML = "<font  >" ;
+        };        
+        parorityHTML = parorityHTML + ColumnValue + "</font>" ;
+    };
+
 	return parorityHTML;
 }
 

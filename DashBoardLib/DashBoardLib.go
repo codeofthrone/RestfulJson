@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	// "time"
 )
 
 type JiraIssueVersions struct {
@@ -71,17 +72,18 @@ type JsonResultTable struct {
 }
 
 type ProjectSummaryTable struct {
-	Project       string `json:"Project"`
-	Version       string `json:"Version"`
-	Scenario      string `json:"Scenario"`
-	DataCheck     string `json:"DataCheck"`
-	Auto          string `json:"Auto"`
-	BDI           string `json:"BDI"`
-	Compatibility string `json:"Compatibility"`
-	Security      string `json:"Security"`
-	Other         string `json:"Other"`
-	Battery       string `json:"Battery"`
-	Date          string `json:"Date"`
+	Project       string  `json:"Project"`
+	Version       string  `json:"Version"`
+	FileName      string  `json:"FileName"`
+	Scenario      float64 `json:"Scenario"`
+	DataCheck     float64 `json:"DataCheck"`
+	Auto          float64 `json:"Auto"`
+	BDI           float64 `json:"BDI"`
+	Compatibility float64 `json:"Compatibility"`
+	Security      float64 `json:"Security"`
+	Other         float64 `json:"Other"`
+	Battery       float64 `json:"Battery"`
+	Date          string  `json:"Date"`
 }
 
 func stringInSlice(str string, list []string) bool {
@@ -443,6 +445,7 @@ func DiffDate(ProjectName string) JsonResult {
 func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 	db, err := sql.Open("mysql", "eli:eli@/Jira_Data")
 	// Date Create
+	// start := time.Now()
 
 	DateRemainCreateSQL := "SELECT * from (select date(UpdatedTime) as date from Issues  WHERE `Key` LIKE 'TYGH-%'  " +
 		" union " +
@@ -473,7 +476,8 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 			tmpDate  string
 		)
 		Issuess.Scan(&tmpId, &tmpVerId, &tmpDate)
-		VersionsSQL := "SELECT Data FROM `Version` WHERE Id='" + tmpId + "' AND Enable='1'"
+		VersionsSQL := "SELECT `Versions`.`Name` FROM `Versions` INNER join `Version` on `Versions`.`Sn` = `Version`.`Data` AND `Version`.`Enable`='1' WHERE `Version`.`Id`='" + tmpId + "'"
+		// VersionsSQL := "SELECT Data FROM `Version` WHERE Id='" + tmpId + "' AND Enable='1'"
 		VersionsROW, err := db.Query(VersionsSQL)
 		checkerr(VersionsSQL, err)
 		CreateVersionCounter := 0
@@ -481,11 +485,13 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 			appappendflag := 0
 			webappendflag := 0
 			CreateVersionCounter++
-			var versionID string
+			var VersionName string
+			// var versionID string
 			var tmpresult JiraIssuesDateRemain
-			VersionsROW.Scan(&versionID)
-			VersionNameSQL := "SELECT Name FROM `Versions` WHERE Sn='" + versionID + "'"
-			VersionName := QuerySingle(VersionNameSQL)
+			VersionsROW.Scan(&VersionName)
+			// VersionsROW.Scan(&versionID)
+			// VersionNameSQL := "SELECT Name FROM `Versions` WHERE Sn='" + versionID + "'"
+			// VersionName := QuerySingle(VersionNameSQL)
 			// log.Println("Create", VersionName, tmpId, tmpDate)
 			if strings.Contains(VersionName, "APP") {
 				for Key, Value := range APPDateReaminResult {
@@ -527,17 +533,23 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 				ResolveDate = QuerySingle(HistorySQL)
 			}
 
-			FixVersionsSQL := "SELECT Data FROM `Fixversion` WHERE Id='" + tmpId + "' AND Enable='1'"
+			FixVersionsSQL := "SELECT `Fixversions`.`Name` FROM `Fixversions` INNER join `Fixversion` on `Fixversions`.`Sn` = `Fixversion`.`Data` AND `Fixversion`.`Enable`='1' WHERE `Fixversion`.`Id`='" + tmpId + "'"
+
+			// FixVersionsSQL := "SELECT Data FROM `Fixversion` WHERE Id='" + tmpId + "' AND Enable='1'"
+			// log.Println("tmpid", tmpId)
 			FixVersionsROW, err := db.Query(FixVersionsSQL)
 			checkerr(FixVersionsSQL, err)
 			for FixVersionsROW.Next() {
 				var tmpresult JiraIssuesDateRemain
 				appappendflag := 0
 				webappendflag := 0
-				var versionID string
-				FixVersionsROW.Scan(&versionID)
-				FixVersionSQL := "SELECT Name FROM `Fixversions` WHERE Sn='" + versionID + "'"
-				FixVersionName := QuerySingle(FixVersionSQL)
+				// var versionID string
+				var FixVersionName string
+				// FixVersionsROW.Scan(&versionID)
+				FixVersionsROW.Scan(&FixVersionName)
+				// log.Println("tmpid", tmpId, "versionID", versionID)
+				// FixVersionSQL := "SELECT Name FROM `Fixversions` WHERE Sn='" + versionID + "'"
+				// FixVersionName := QuerySingle(FixVersionSQL)
 				// log.Println("Close", FixVersionName, tmpId, ResolveDate, CreateVersionCounter)
 				if strings.Contains(FixVersionName, "APP") && CreateVersionCounter >= 0 {
 					for Key, Value := range APPDateReaminResult {
@@ -602,6 +614,8 @@ func TYGHDiffDate(ProjectName string) (JsonResult, JsonResult) {
 	}
 
 	// log.Println(ReturnJsonAPP, ReturnJsonWEB)
+	// elapsed := time.Since(start)
+	// log.Println(elapsed)
 	return ReturnJsonAPP, ReturnJsonWEB
 }
 
@@ -1062,13 +1076,13 @@ func BABYDiffDate() (JsonResult, JsonResult) {
 	var tmpName []string
 
 	for _, value := range JsonResult_A.Name {
-		if !stringInSlice(value, newandroidjson.Name) {
+		if !stringInSlice(value, tmpName) {
 			tmpName = append(tmpName, value)
 		}
 	}
 
 	for _, value := range JsonResult_I.Name {
-		if !stringInSlice(value, newandroidjson.Name) {
+		if !stringInSlice(value, tmpName) {
 			tmpName = append(tmpName, value)
 		}
 	}
@@ -1111,14 +1125,14 @@ func BABYDiffDate() (JsonResult, JsonResult) {
 func ProjectSummary(ProjectName string) []ProjectSummaryTable {
 	db, _ := sql.Open("mysql", "eli:eli@/Jira_Data")
 
-	RemainIssueSQL := "SELECT `Project`,`Version`,`Scenario`,`DataCheck`,`Auto`,`BDI`,`Compatibility`,`Security`,`Other`,`Battery`,DATE(`Date`) FROM `Projectsummary` WHERE  Project='" + ProjectName + "'"
+	RemainIssueSQL := "SELECT `Project`,`Version`,`FileName`,ROUND(`Scenario`,0),ROUND(`DataCheck`,0),ROUND(`Auto`,0),ROUND(`BDI`,0),ROUND(`Compatibility`,0),ROUND(`Security`,0),ROUND(`Other`,0),ROUND(`Battery`,0),DATE(`Date`) FROM `Projectsummary` WHERE  Project='" + ProjectName + "' order by `Date` DESC"
 
 	var RemainIssueResult []ProjectSummaryTable
 	RemainIssues, err := db.Query(RemainIssueSQL)
 	checkerr(RemainIssueSQL, err)
 	for RemainIssues.Next() {
 		var tmpRemainIssue ProjectSummaryTable
-		RemainIssues.Scan(&tmpRemainIssue.Project, &tmpRemainIssue.Version, &tmpRemainIssue.Scenario, &tmpRemainIssue.DataCheck, &tmpRemainIssue.Auto, &tmpRemainIssue.BDI, &tmpRemainIssue.Compatibility, &tmpRemainIssue.Security, &tmpRemainIssue.Other, &tmpRemainIssue.Battery, &tmpRemainIssue.Date)
+		RemainIssues.Scan(&tmpRemainIssue.Project, &tmpRemainIssue.Version, &tmpRemainIssue.FileName, &tmpRemainIssue.Scenario, &tmpRemainIssue.DataCheck, &tmpRemainIssue.Auto, &tmpRemainIssue.BDI, &tmpRemainIssue.Compatibility, &tmpRemainIssue.Security, &tmpRemainIssue.Other, &tmpRemainIssue.Battery, &tmpRemainIssue.Date)
 		// log.Println(tmpRemainIssue)
 		RemainIssueResult = append(RemainIssueResult, tmpRemainIssue)
 	}
