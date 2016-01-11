@@ -25,25 +25,77 @@ func main() {
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(
+		rest.Get("/List", func(w rest.ResponseWriter, req *rest.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			// FunctionName := req.PathParam("function")
+			// switch {
+			// case FunctionName == "List":
+			ReturnResult := dashboardlib.ListProjectSummaryColumn()
+			w.WriteJson(&ReturnResult)
+			// }
+		}),
+		rest.Get("/#project/#type/#value", func(w rest.ResponseWriter, req *rest.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			ProjectName := req.PathParam("project")
+			TypeName := req.PathParam("type")
+			dataName := req.PathParam("value")
+			switch {
+
+			case ProjectName == "TYGH":
+				switch {
+
+				case TypeName == "WeekToDate":
+					ReturnResult := dashboardlib.TYGHDiffWeekDate(ProjectName, dataName)
+					w.WriteJson(&ReturnResult)
+				}
+			case ProjectName == "BABY":
+				switch {
+
+				case TypeName == "WeekToDate":
+					ReturnResult := dashboardlib.BABYDiffWeekDate(ProjectName, dataName)
+					w.WriteJson(&ReturnResult)
+				}
+			case ProjectName == "MMHDRUG":
+				switch {
+
+				case TypeName == "WeekToDate":
+					ReturnResult := dashboardlib.DiffWeekDate(ProjectName, dataName)
+					w.WriteJson(&ReturnResult)
+				}
+
+			}
+
+		}),
 		rest.Get("/#project/#type", func(w rest.ResponseWriter, req *rest.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			ProjectName := req.PathParam("project")
 			TypeName := req.PathParam("type")
+
 			switch {
+
 			case TypeName == "LastUpdate":
 				ReturnResult := dashboardlib.LastUpdateWeek()
 				w.WriteJson(&ReturnResult)
 			case TypeName == "ProjectSummary":
 				ReturnResult := dashboardlib.ProjectSummary(ProjectName)
 				w.WriteJson(&ReturnResult)
+			case TypeName == "Status":
+				ReturnResult := dashboardlib.PieChart(ProjectName, TypeName)
+				w.WriteJson(&ReturnResult)
+			case TypeName == "Priority":
+				ReturnResult := dashboardlib.PieChart(ProjectName, TypeName)
+				w.WriteJson(&ReturnResult)
+			case TypeName == "Resolution":
+				ReturnResult := dashboardlib.PieChart(ProjectName, TypeName)
+				w.WriteJson(&ReturnResult)
 
 			case ProjectName == "TYGH":
 				switch {
-				case TypeName == "TYGHDiffDate":
-					ReturnResultAPP, ReturnResultWEB := dashboardlib.TYGHDiffDate(ProjectName)
-					var ReturnResult []dashboardlib.JsonResult
-					ReturnResult = append(ReturnResult, ReturnResultAPP, ReturnResultWEB)
+
+				case TypeName == "DiffWeek":
+					ReturnResult := dashboardlib.TYGHDiffWeek(ProjectName)
 					w.WriteJson(&ReturnResult)
+
 				case TypeName == "DiffVersionAPP":
 					ReturnResult, _ := dashboardlib.TYGHDiffVersion(ProjectName)
 					w.WriteJson(&ReturnResult)
@@ -60,9 +112,7 @@ func main() {
 				case TypeName == "DiffVersionSoFar":
 					ReturnResult := dashboardlib.DiffVersionSoFarRemain(ProjectName)
 					w.WriteJson(&ReturnResult)
-				case TypeName == "DiffDate":
-					ReturnResult := dashboardlib.DiffDate(ProjectName)
-					w.WriteJson(&ReturnResult)
+
 				case TypeName == "WeekRemain":
 					ReturnResult := dashboardlib.WeekRemain(ProjectName)
 					w.WriteJson(&ReturnResult)
@@ -87,6 +137,10 @@ func main() {
 				case TypeName == "DiffVersionSoFar":
 					ReturnResult := dashboardlib.DiffVersionSoFarRemain(ProjectName)
 					w.WriteJson(&ReturnResult)
+				case TypeName == "DiffWeek":
+					ReturnResult := dashboardlib.BABYDiffWeek(ProjectName)
+					w.WriteJson(&ReturnResult)
+
 				case TypeName == "DiffDate":
 					ReturnResultA, ReturnResultI := dashboardlib.BABYDiffDate()
 					var BABYReturnResult []dashboardlib.JsonResult
@@ -110,6 +164,10 @@ func main() {
 				}
 			case ProjectName == "MMHDRUG":
 				switch {
+				case TypeName == "DiffWeek":
+					ReturnResult := dashboardlib.DiffWeek(ProjectName)
+					w.WriteJson(&ReturnResult)
+
 				case TypeName == "IssueTimeSpent":
 					ReturnResult := dashboardlib.IssueTimespent(ProjectName)
 					w.WriteJson(&ReturnResult)
@@ -128,6 +186,7 @@ func main() {
 
 				}
 			}
+
 		}),
 	)
 
