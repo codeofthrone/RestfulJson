@@ -20,11 +20,11 @@ StandaloneDashboard(function(db){
 
 	db.addDashboardTab(db1, {
         title: 'TYGH project',
-        // active: true
+        active: true
     });
     db.addDashboardTab(db2, {
         title: 'Baby project',
-        active: true
+        // active: true
     });
 
     db.addDashboardTab(db4, {
@@ -308,7 +308,7 @@ function stackedColumnChar(Component,CaptionName,AddrLink) {
 }
 
 function ColumnChar(ProjectName,Component,CaptionName,AddrLink) {
-    
+    var mydata = JSON.parse(config);
     Component.setCaption(CaptionName);
 	Component.setDimensions (12, 4);
 	
@@ -325,10 +325,12 @@ function ColumnChar(ProjectName,Component,CaptionName,AddrLink) {
         Component.addDrillStep (function (done, params, updatedComponent) {
             updatedComponent.lock();
             Component.setCaption("JIRA issue remain by time(Daily)");
-            $.get("http://10.116.136.13:7108/api/"+ProjectName+"/WeekToDate/"+params.label, function (data) {
+            $.get("http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectName+"/WeekToDate/"+params.label, function (data) {
                 updatedComponent.setLabels (data[0]['Name']); // You can also use data.categories
-                updatedComponent.addSeries ("APP", "APP", data[0]['RemainCounter'],{ seriesDisplayType: "column" });
-                updatedComponent.addSeries ("WEB", "WEB", data[1]['RemainCounter'],{ seriesDisplayType: "column" });
+                updatedComponent.addSeries ("APP", "APP", data[0]['RemainCounter']);
+                updatedComponent.addSeries ("APP_Line", "APP_Line", data[0]['RemainCounter'],{ seriesDisplayType: "line" });
+                updatedComponent.addSeries ("WEB", "WEB", data[1]['RemainCounter']);
+                updatedComponent.addSeries ("WEB_Line", "WEB_Line", data[1]['RemainCounter'],{ seriesDisplayType: "line" });
                 done();
                 updatedComponent.unlock ();
             });
@@ -339,17 +341,19 @@ function ColumnChar(ProjectName,Component,CaptionName,AddrLink) {
         Component.lock ();
          $.get(AddrLink, function (data) {
         Component.setLabels (data[0]['Name']); // You can also use data.categories
-        Component.addSeries ("APP", "APP", data[0]['RemainCounter'],{seriesDisplayType: "column" });
-        Component.addSeries ("WEB", "WEB", data[1]['RemainCounter'],{seriesDisplayType: "column" });
+        Component.addSeries ("Android", "Android", data[0]['RemainCounter'],{seriesDisplayType: "column" });
+        Component.addSeries ("IOS", "IOS", data[1]['RemainCounter'],{seriesDisplayType: "column" });
         Component.unlock ();
         });
         Component.addDrillStep (function (done, params, updatedComponent) {
             updatedComponent.lock();
             Component.setCaption("JIRA issue remain by time(Daily)");
-            $.get("http://10.116.136.13:7108/api/"+ProjectName+"/WeekToDate/"+params.label, function (data) {
+            $.get("http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectName+"/WeekToDate/"+params.label, function (data) {
                 updatedComponent.setLabels (data[0]['Name']); // You can also use data.categories
                 updatedComponent.addSeries ("Android", "Android", data[0]['RemainCounter'],{ seriesDisplayType: "column" });
+                updatedComponent.addSeries ("Android_Line", "Android_Line", data[0]['RemainCounter'],{ seriesDisplayType: "line" });
                 updatedComponent.addSeries ("IOS", "IOS", data[1]['RemainCounter'],{ seriesDisplayType: "column" });
+                updatedComponent.addSeries ("IOS_Line", "IOS_Line", data[1]['RemainCounter'],{ seriesDisplayType: "line" });
                 done();
                 updatedComponent.unlock ();
             });
@@ -366,9 +370,10 @@ function ColumnChar(ProjectName,Component,CaptionName,AddrLink) {
         Component.addDrillStep (function (done, params, updatedComponent) {
             updatedComponent.lock();
             Component.setCaption("JIRA issue remain by time(Daily)");
-            $.get("http://10.116.136.13:7108/api/"+ProjectName+"/WeekToDate/"+params.label, function (data) {
+            $.get("http://"+location.hostname+":"+mydata[0].port+"/api/"+ProjectName+"/WeekToDate/"+params.label, function (data) {
                 updatedComponent.setLabels (data['Name']); // You can also use data.categories
                 updatedComponent.addSeries ("APP", "APP", data['RemainCounter'],{ seriesDisplayType: "column" });
+                updatedComponent.addSeries ("APP_Line", "APP_Line", data['RemainCounter'],{ seriesDisplayType: "line" });
                 done();
                 updatedComponent.unlock ();
             });

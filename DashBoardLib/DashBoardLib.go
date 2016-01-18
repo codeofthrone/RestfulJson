@@ -504,22 +504,25 @@ func DiffWeek(ProjectName string) JsonResult {
 	// log.Println(WEBDateReaminResult)
 	layout := "2006-01-02"
 	for key, value := range APPDateReaminResult.Name {
-		t, err := time.Parse(layout, value)
-		if err != nil {
-			log.Println(err)
-		}
-		isoYear, isoWeek := t.ISOWeek()
-		// log.Println(isoWeek, value)
-		sisoWeek := strconv.Itoa(isoWeek)
-		sisoYear := strconv.Itoa(isoYear)
-		yearweekStr := sisoYear + "-" + sisoWeek
-		// log.Println(value, yearweekStr)
-		for index, weeknumber := range APPWeekReaminResult {
-			if weeknumber.Name == yearweekStr {
-				// log.Println(index, key, weeknumber.Name, yearweekStr)
-				APPWeekReaminResult[index].RemainCounter = APPDateReaminResult.RemainCounter[key]
+		if value != "0000-00-00" {
+			t, err := time.Parse(layout, value)
+			if err != nil {
+				log.Println(err)
+			}
+			isoYear, isoWeek := t.ISOWeek()
+			// log.Println(isoWeek, value)
+			sisoWeek := strconv.Itoa(isoWeek)
+			sisoYear := strconv.Itoa(isoYear)
+			yearweekStr := sisoYear + "-" + sisoWeek
+			// log.Println(value, yearweekStr)
+			for index, weeknumber := range APPWeekReaminResult {
+				if weeknumber.Name == yearweekStr {
+					// log.Println(index, key, weeknumber.Name, yearweekStr)
+					APPWeekReaminResult[index].RemainCounter = APPDateReaminResult.RemainCounter[key]
+				}
 			}
 		}
+
 	}
 
 	now := time.Now()
@@ -709,12 +712,18 @@ func TYGHDiffWeekDate(ProjectName string, YearWeek string) []JsonResult {
 
 	WEBRemain := 0
 	APPRemain := 0
+	lastWebRemain := 0
+	lastAPPRemain := 0
+
 	for key, _ := range WEBDateReaminResult {
 		WEBRemain = (WEBRemain + WEBDateReaminResult[key].CreateCounter) - WEBDateReaminResult[key].CloseCounter
 		WEBDateReaminResult[key].RemainCounter = WEBRemain
 		for Key, _ := range WEBWeekDateReaminResult {
 			if WEBWeekDateReaminResult[Key].Name == WEBDateReaminResult[key].Name {
 				WEBWeekDateReaminResult[Key].RemainCounter = WEBRemain
+				if lastWebRemain == 0 {
+					lastWebRemain = WEBDateReaminResult[key-1].RemainCounter
+				}
 			}
 		}
 
@@ -723,40 +732,72 @@ func TYGHDiffWeekDate(ProjectName string, YearWeek string) []JsonResult {
 		for Key, _ := range APPWeekDateReaminResult {
 			if APPWeekDateReaminResult[Key].Name == APPDateReaminResult[key].Name {
 				APPWeekDateReaminResult[Key].RemainCounter = APPRemain
+				if lastAPPRemain == 0 {
+					lastAPPRemain = APPDateReaminResult[key-1].RemainCounter
+				}
 			}
 
 		}
 	}
+	// log.Println(lastAPPRemain, lastWebRemain)
 
 	var ReturnJsonAPP JsonResult
 	var ReturnJsonWEB JsonResult
 	var oldwebremain, oldappremain int
 	for key, _ := range WEBWeekDateReaminResult {
 		ReturnJsonWEB.Name = append(ReturnJsonWEB.Name, WEBWeekDateReaminResult[key].Name)
+
 		if WEBWeekDateReaminResult[key].RemainCounter != 0 {
 			oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
+			lastWebRemain = oldwebremain
+		} else {
+			WEBWeekDateReaminResult[key].RemainCounter = lastWebRemain
 		}
 		if APPWeekDateReaminResult[key].RemainCounter != 0 {
 			oldappremain = APPWeekDateReaminResult[key].RemainCounter
-		}
-		// log.Println(key, oldappremain, oldwebremain)
-
-		if WEBWeekDateReaminResult[key].RemainCounter == 0 {
-			ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, oldwebremain)
+			lastAPPRemain = oldappremain
 		} else {
-			oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
-			ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, WEBWeekDateReaminResult[key].RemainCounter)
+			APPWeekDateReaminResult[key].RemainCounter = lastAPPRemain
 		}
+		// log.Println(...)
+
+		// oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
+		ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, WEBWeekDateReaminResult[key].RemainCounter)
 
 		ReturnJsonAPP.Name = append(ReturnJsonAPP.Name, APPWeekDateReaminResult[key].Name)
-		if APPWeekDateReaminResult[key].RemainCounter == 0 {
-			ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, oldappremain)
-		} else {
-			oldappremain = APPWeekDateReaminResult[key].RemainCounter
-			ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, APPWeekDateReaminResult[key].RemainCounter)
-		}
-		// log.Println(key, oldappremain, oldwebremain)
+		// oldappremain = APPWeekDateReaminResult[key].RemainCounter
+		ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, APPWeekDateReaminResult[key].RemainCounter)
 	}
+
+	// var ReturnJsonAPP JsonResult
+	// var ReturnJsonWEB JsonResult
+	// var oldwebremain, oldappremain int
+	// for key, _ := range WEBWeekDateReaminResult {
+	// 	ReturnJsonWEB.Name = append(ReturnJsonWEB.Name, WEBWeekDateReaminResult[key].Name)
+	// 	if WEBWeekDateReaminResult[key].RemainCounter != 0 {
+	// 		oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
+	// 	}
+	// 	if APPWeekDateReaminResult[key].RemainCounter != 0 {
+	// 		oldappremain = APPWeekDateReaminResult[key].RemainCounter
+	// 	}
+	// 	// log.Println(key, oldappremain, oldwebremain)
+
+	// 	if WEBWeekDateReaminResult[key].RemainCounter == 0 {
+	// 		ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, oldwebremain)
+	// 	} else {
+	// 		oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
+	// 		ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, WEBWeekDateReaminResult[key].RemainCounter)
+	// 	}
+
+	// 	ReturnJsonAPP.Name = append(ReturnJsonAPP.Name, APPWeekDateReaminResult[key].Name)
+	// 	if APPWeekDateReaminResult[key].RemainCounter == 0 {
+	// 		ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, oldappremain)
+	// 	} else {
+	// 		oldappremain = APPWeekDateReaminResult[key].RemainCounter
+	// 		ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, APPWeekDateReaminResult[key].RemainCounter)
+	// 	}
+	// 	// log.Println(key, oldappremain, oldwebremain)
+	// }
 
 	var ReturnResult []JsonResult
 	ReturnResult = append(ReturnResult, ReturnJsonAPP, ReturnJsonWEB)
@@ -1633,18 +1674,25 @@ func BABYDiffWeekDate(ProjectName string, YearWeek string) []JsonResult {
 
 	APPDateReaminResult, WEBDateReaminResult := BABYDiffDate()
 
+	lastAPPremain := 0
+	lastWEBremain := 0
 	for key, _ := range WEBDateReaminResult.Name {
 		for Key, _ := range WEBWeekDateReaminResult {
 			if WEBWeekDateReaminResult[Key].Name == WEBDateReaminResult.Name[key] {
 				WEBWeekDateReaminResult[Key].RemainCounter = WEBDateReaminResult.RemainCounter[key]
+				if lastWEBremain == 0 {
+					lastWEBremain = WEBDateReaminResult.RemainCounter[key-1]
+				}
 			}
 		}
 
 		for Key, _ := range APPWeekDateReaminResult {
 			if APPWeekDateReaminResult[Key].Name == APPDateReaminResult.Name[key] {
 				APPWeekDateReaminResult[Key].RemainCounter = APPDateReaminResult.RemainCounter[key]
+				if lastAPPremain == 0 {
+					lastAPPremain = APPDateReaminResult.RemainCounter[key-1]
+				}
 			}
-
 		}
 	}
 
@@ -1656,30 +1704,23 @@ func BABYDiffWeekDate(ProjectName string, YearWeek string) []JsonResult {
 
 		if WEBWeekDateReaminResult[key].RemainCounter != 0 {
 			oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
-
-		} else if key == 0 {
-			WEBWeekDateReaminResult[key].RemainCounter = WEBWeekDateReaminResult[key+1].RemainCounter
+			lastWEBremain = oldwebremain
+		} else {
+			WEBWeekDateReaminResult[key].RemainCounter = lastWEBremain
 		}
 		if APPWeekDateReaminResult[key].RemainCounter != 0 {
 			oldappremain = APPWeekDateReaminResult[key].RemainCounter
-		} else if key == 0 {
-			APPWeekDateReaminResult[key].RemainCounter = APPWeekDateReaminResult[key+1].RemainCounter
+			lastAPPremain = oldappremain
+		} else {
+			APPWeekDateReaminResult[key].RemainCounter = lastAPPremain
 		}
 
-		if WEBWeekDateReaminResult[key].RemainCounter == 0 {
-			ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, oldwebremain)
-		} else {
-			oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
-			ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, WEBWeekDateReaminResult[key].RemainCounter)
-		}
+		oldwebremain = WEBWeekDateReaminResult[key].RemainCounter
+		ReturnJsonWEB.RemainCounter = append(ReturnJsonWEB.RemainCounter, WEBWeekDateReaminResult[key].RemainCounter)
 
 		ReturnJsonAPP.Name = append(ReturnJsonAPP.Name, APPWeekDateReaminResult[key].Name)
-		if APPWeekDateReaminResult[key].RemainCounter == 0 {
-			ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, oldappremain)
-		} else {
-			oldappremain = APPWeekDateReaminResult[key].RemainCounter
-			ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, APPWeekDateReaminResult[key].RemainCounter)
-		}
+		oldappremain = APPWeekDateReaminResult[key].RemainCounter
+		ReturnJsonAPP.RemainCounter = append(ReturnJsonAPP.RemainCounter, APPWeekDateReaminResult[key].RemainCounter)
 	}
 
 	var ReturnResult []JsonResult
